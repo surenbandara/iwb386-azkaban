@@ -5,9 +5,6 @@ import my_main_program.types;
 configurable string host = "localhost";
 configurable int port = 27017;
 
-// configurable string username = ?;
-// configurable string password = ?;
-// configurable string database = ?;
 
 final mongodb:Client mongoDb = check new ({
     connection: {
