@@ -143,6 +143,7 @@ dependencies = [
 ]
 modules = [
 	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program"},
-	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.mongodb"}
+	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.dbmanager"},
+	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.types"}
 ]
 
