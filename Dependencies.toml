@@ -32,6 +32,9 @@ modules = [
 org = "ballerina"
 name = "jballerina.java"
 version = "0.0.0"
+modules = [
+	{org = "ballerina", packageName = "jballerina.java", moduleName = "jballerina.java"}
+]
 
 [[package]]
 org = "ballerina"
@@ -59,6 +62,23 @@ version = "0.0.0"
 
 [[package]]
 org = "ballerina"
+name = "lang.regexp"
+version = "0.0.0"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"}
+]
+
+[[package]]
+org = "ballerina"
+name = "lang.string"
+version = "0.0.0"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "lang.regexp"}
+]
+
+[[package]]
+org = "ballerina"
 name = "lang.value"
 version = "0.0.0"
 dependencies = [
@@ -82,6 +102,18 @@ name = "observe"
 version = "1.3.0"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
+]
+
+[[package]]
+org = "ballerina"
+name = "regex"
+version = "1.3.2"
+dependencies = [
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "lang.string"}
+]
+modules = [
+	{org = "ballerina", packageName = "regex", moduleName = "regex"}
 ]
 
 [[package]]
@@ -137,6 +169,8 @@ name = "my_main_program"
 version = "0.1.0"
 dependencies = [
 	{org = "ballerina", name = "io"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "regex"},
 	{org = "ballerina", name = "uuid"},
 	{org = "ballerinai", name = "observe"},
 	{org = "ballerinax", name = "mongodb"}
@@ -144,6 +178,9 @@ dependencies = [
 modules = [
 	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program"},
 	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.dbmanager"},
-	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.types"}
+	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.java.lang"},
+	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.similarityfinder"},
+	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.types"},
+	{org = "suren", packageName = "my_main_program", moduleName = "my_main_program.utils"}
 ]
 

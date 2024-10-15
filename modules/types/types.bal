@@ -5,7 +5,7 @@ public type Issue record {|
 
 public type IssueContent record {|
     string parent_id?;
-    string title?;
+    string title;
     string description;
     string created_by;
     string created_at;
@@ -15,6 +15,7 @@ public type IssueContent record {|
     int upVotes;
     int downVotes;
     string tags;
+    float similarityScore?;
 |};
 
 public type IssueContentUpdate record {|
