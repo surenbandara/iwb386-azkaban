@@ -231,7 +231,7 @@ service /api on new http:Listener(9091) {
      
     }
 
-    resource function delete issues/[string id](types:IssueDeleteRequest issueDeleteRequest) returns http:DELETE|http:InternalServerError|http:Unauthorized|error {
+    resource function post issues/[string id](types:IssueDeleteRequest issueDeleteRequest) returns http:DELETE|http:InternalServerError|http:Unauthorized|error {
       types:User|error user = authClient->/users(headers = {Authorization : "Bearer "+issueDeleteRequest.token});
       if !(user is error){
          types:Issue|error existingIssue = issueDB.findOne({"id":id});

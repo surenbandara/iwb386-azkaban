@@ -14,7 +14,7 @@ export const getIssues = async (filter = {}) =>
   await axios.post(`${API_BASE_URL}/issues`, filter);
 
 export const deleteIssue = async (issueId, body = {}) =>
-  await axios.delete(`${API_BASE_URL}/issues/${issueId}`,body );
+  await axios.post(`${API_BASE_URL}/issues/${issueId}`,body );
 
 export const filterIssues = async (filterData) =>
   await axios.post(`${API_BASE_URL}/filter`, filterData);

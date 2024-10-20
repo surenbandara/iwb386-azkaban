@@ -13,7 +13,7 @@ function IssueItem({ issue, deletePostFunction }) {
   };
 
   const handleDelete = async () => {
-    await deleteIssue(issue.id, {toke: token});
+    await deleteIssue(issue.id, {token : token});
     await deletePostFunction();
     setShowConfirm(false);
   };

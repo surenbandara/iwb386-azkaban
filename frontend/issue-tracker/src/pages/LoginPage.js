@@ -7,7 +7,7 @@ import { BrowserRouter as Router, Routes,Route , useNavigate } from 'react-route
 function LoginPage() {
   const [nameInput, setUsernameInput] = useState('');
   const [password, setPassword] = useState('');
-  const  {userName, setUsername, token, setToken  } = useUser();
+  const  {userName, setUserName, token, setToken  } = useUser();
   const navigate = useNavigate();
 
 
@@ -24,6 +24,7 @@ function LoginPage() {
         if(loginResponse.data.status == true){
             console.log(loginResponse);
             setToken(loginResponse.data.token);
+            setUserName(nameInput);
             navigate('/home');
         }
     } catch (error) {

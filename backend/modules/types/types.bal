@@ -40,6 +40,7 @@ public type IssueCreateRequest record {|
     IssueType issue_type?;
     string title?;
     string description;
+    string created_by;
     string token;
     string[] tags;
 |};
