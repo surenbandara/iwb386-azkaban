@@ -1,0 +1,226 @@
+openapi: 3.0.3
+info:
+  title: Issue Management API
+  version: 1.0.0
+  description: API for managing issues and tags.
+
+servers:
+  - url: http://localhost:9091/api
+
+paths:
+  /issue:
+    post:
+      summary: Create a new issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCreateRequest'
+      responses:
+        '200':
+          description: Issue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /issues:
+    post:
+      summary: Get issues based on filters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueGetRequest'
+      responses:
+        '200':
+          description: List of issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Issue'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /filter:
+    post:
+      summary: Filter issues by tags and similarity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueFilterRequest'
+      responses:
+        '200':
+          description: Filtered issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Issue'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+  /update:
+    put:
+      summary: Update an existing issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueUpdateRequest'
+      responses:
+        '200':
+          description: Issue updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Issue not found
+        '500':
+          description: Internal Server Error
+
+  /issues/{id}:
+    post:
+      summary: Delete an issue by ID
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: ID of the issue to delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueDeleteRequest'
+      responses:
+        '200':
+          description: Issue deleted
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+
+components:
+  schemas:
+    Issue:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: string
+        status:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+        views:
+          type: integer
+
+    IssueCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        parent_id:
+          type: string
+          nullable: true
+        issue_type:
+          type: string
+        token:
+          type: string
+
+    IssueGetRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+        token:
+          type: string
+
+    IssueFilterRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: boolean
+          nullable: true
+        created_by:
+          type: string
+          nullable: true
+        token:
+          type: string
+
+    IssueUpdateRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+        status:
+          type: boolean
+          nullable: true
+        watched:
+          type: boolean
+          nullable: true
+        token:
+          type: string
+
+    IssueDeleteRequest:
+      type: object
+      properties:
+        token:
+          type: string

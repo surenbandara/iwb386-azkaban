@@ -1,0 +1,122 @@
+openapi: 3.0.0
+info:
+  title: Authentication Service
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:9090/auth
+
+paths:
+  /login:
+    post:
+      summary: User login and JWT issuance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "lakshan"
+                password:
+                  type: string
+                  example: "123"
+      responses:
+        '200':
+          description: JWT issued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token
+                  status:
+                    type: boolean
+                    example: true
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Incorrect password"
+                  status:
+                    type: boolean
+                    example: false
+
+  /users:
+    get:
+      summary: Retrieve user information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  role:
+                    type: string
+                    enum: [ADMIN, DEVELOPER, TESTER]
+        '401':
+          description: JWT validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "JWT validation failed"
+
+  /signUp:
+    post:
+      summary: Add a new user (Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "john"
+                role:
+                  type: string
+                  enum: [ADMIN, DEVELOPER, TESTER]
+      responses:
+        '202':
+          description: User added successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Successfully added"
+        '401':
+          description: Unauthorized or invalid role
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Not an ADMIN"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
