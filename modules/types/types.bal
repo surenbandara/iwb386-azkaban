@@ -1,3 +1,7 @@
+public enum IssueType {
+    COMMENT,
+    ISSUE
+}
 public type Issue record {|
     readonly string id;
     *IssueContent;
@@ -5,31 +9,65 @@ public type Issue record {|
 
 public type IssueContent record {|
     string parent_id?;
-    string title;
+    IssueType issue_type?;
+    string title?;
     string description;
     string created_by;
     string created_at;
     int timestamp;
-    string commentIds;
     boolean status?;
-    int upVotes;
-    int downVotes;
+    int views;
     string tags;
     float similarityScore?;
 |};
 
 public type IssueContentUpdate record {|
     string parent_id?;
+    IssueType issue_type?;
     string title?;
     string description?;
     string created_by?;
     string created_at?;
     int timestamp?;
-    string commentIds?;
     boolean status?;
-    int upVotes?;
+    int views?;
     int downVotes?;
     string tags?;
+|};
+
+public type IssueCreateRequest record {|
+    string parent_id?;
+    IssueType issue_type?;
+    string title?;
+    string created_by;
+    string description;
+    string[] tags;
+|};
+
+public type IssueUpdateRequest record {|
+    string id;
+    string title?;
+    boolean status?;
+    boolean watched?;
+    string description?;
+    string[] tags?;
+|};
+
+public type IssueGetRequest record {|
+    string id?;
+    string parent_id?;
+    IssueType issue_type?;
+    string created_by?;
+    string created_at?;
+    boolean status?;
+    string[] tags?;
+|};
+
+public type IssueFilterRequest record {|
+    string description;
+    boolean status?;
+    string created_by?;
+    string[] tags;
 |};
 
 public type Tag record {|

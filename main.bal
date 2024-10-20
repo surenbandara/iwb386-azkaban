@@ -1,25 +1,233 @@
-// import my_main_program.dbmanager;
-// import my_main_program.types;
-import my_main_program.similarityfinder as SF;
+import my_main_program.dbmanager;
+//import my_main_program.similarityfinder as SF;
 import my_main_program.types as types;
-import ballerina/io;
+import my_main_program.utils as utils;
+import ballerina/http;
+import ballerina/time;
+import my_main_program.similarityfinder;
 
-public function main() returns error? {
-   //dbmanager:IssueDBManager db = check new dbmanager:IssueDBManager("main");
-   //types:Issue|error  a = check db.insertOne({parent_id:"sa", title:"23", description:"343", created_at:"ds", timestamp:232, created_by: "ds", tags: "ss", commentIds: "", downVotes: 0 ,upVotes: 0},"1");
-   //types:Issue|error  a = check DBUtils.findOne("1", {title: "23"});
-   //types:Issue|error  a = check DBUtils.updateOne({title: "updated one"}, "aa" , {title : "23"});
-   //boolean|error  a = check DBUtils.deleteOne("aa" , "01ef896c-29a6-11c0-afd5-0921d3b0d5d8");
-  //types:Issue[]|error   a = check db.getAll("1");
-   //io:println(a);
 
-   SF:SimilarityFinder similarityFinder = new SF:SimilarityFinder();
-   types:Issue[] a = similarityFinder.getSimilarityOrder("The cat is sitting on the window, watching the birds.", [
-      {parent_id:"sa", title:"The cat is perched by the window, observing the birds outside.", description:"343", created_at:"ds", timestamp:232, created_by: "ds", tags: "ss", commentIds: "", downVotes: 0 ,upVotes: 0,id: ""},
-  {parent_id:"sa", title:"The cat is perched by the window, observing the birds outside.", description:"343", created_at:"ds", timestamp:232, created_by: "ds", tags: "ss", commentIds: "", downVotes: 0 ,upVotes: 0,id: ""},
-  {parent_id:"sa", title:"The cat is perched by the window, observing the birds outside.", description:"343", created_at:"ds", timestamp:232, created_by: "ds", tags: "ss", commentIds: "", downVotes: 0 ,upVotes: 0,id: ""}
-  ]
-);
+dbmanager:IssueDBManager issueDB = check new dbmanager:IssueDBManager("main");
+dbmanager:TagDBManager tagDB = check new dbmanager:TagDBManager("main");
 
- io:println(a);
+@http:ServiceConfig {
+    cors: {
+        allowOrigins: ["http://localhost:3000"],   
+        allowCredentials: true,                  
+        allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  
+        allowHeaders: ["Content-Type", "Authorization"], 
+        exposeHeaders: ["X-CUSTOM-HEADER"],        
+        maxAge: 86400 
+    }
+}
+
+service /api on new http:Listener(9091) {
+
+   private similarityfinder:SimilarityFinder similarityfinder = new similarityfinder:SimilarityFinder();
+    
+    resource function post issue(types:IssueCreateRequest issueCreateRequest) returns types:Issue|http:InternalServerError|error {
+        types:IssueContent issue = {description: "", created_at: "" , created_by: "", timestamp: 0, views: 0, tags: "", status: false};
+        issue.description = issueCreateRequest.description;
+        issue.title = issueCreateRequest.title;
+        issue.tags = utils:listToStringConverter(issueCreateRequest.tags);
+        issue.parent_id = issueCreateRequest.parent_id;
+        issue.created_at = time:monotonicNow().toString();
+        issue.timestamp =  <int>time:monotonicNow();
+        issue.issue_type = issueCreateRequest.issue_type;
+        issue.created_by  = issueCreateRequest.created_by;
+
+
+        types:Issue|error result =  issueDB.insertOne(issue);
+        if !(result is error){
+         foreach string tag in issueCreateRequest.tags {
+            types:Tag|error tagRecord = tagDB.findOne({"tag_name": tag});
+            if tagRecord is types:Tag {
+               _ = check tagDB.updateOne({issue_ids: tagRecord.issue_ids + "|" + result.id},{"tag_name": tag});
+            } else {
+               _ = check tagDB.insertOne({tag_name: tag , issue_ids: result.id});
+            }
+         }
+         return result;
+        } else {
+         return http:INTERNAL_SERVER_ERROR;
+        }
+    }
+
+    resource function post issues(types:IssueGetRequest issueGetRequest) returns types:Issue[]|http:InternalServerError|error {        
+        types:Issue[] output = [];
+        string[] tagsRelatedIds = [];
+        map<json> filterParams = <map<json>>issueGetRequest;
+
+         if !(issueGetRequest.id is null) {
+            types:Issue|error issue = issueDB.findOne({"id" : issueGetRequest.id});
+            if !(issue is error) {
+               output.push(issue);
+            }
+         } else {
+            if issueGetRequest.tags != null {
+               foreach string tag in issueGetRequest.tags?:[]{
+                  types:Tag|error tagRecord = tagDB.findOne({"tag_name":tag});
+                  if !(tagRecord is error ){
+                     tagsRelatedIds.push(...utils:stringToListConverter(tagRecord.issue_ids));
+                  } 
+               } on fail {
+                  return http:INTERNAL_SERVER_ERROR;
+               }
+               _ = filterParams.remove("tags");
+            }
+            if tagsRelatedIds.length() != 0 {
+               foreach string tagsRelatedId in tagsRelatedIds{
+                  filterParams["id"] = tagsRelatedId;
+                  types:Issue[]|error dbOutput = issueDB.get(filterParams);
+                  if !(dbOutput is error){
+                     output.push(...dbOutput);
+                  }
+               }
+            } else {
+               types:Issue[]|error dbOutput = issueDB.get(filterParams);
+                  if !(dbOutput is error){
+                     output.push(...dbOutput);
+                  }
+            }
+         }
+
+         types:Issue[] findUniqeOutput = [];
+         foreach types:Issue item in output {
+            if findUniqeOutput.indexOf(item) is () {
+               findUniqeOutput.push(item);
+            }
+         } 
+         
+
+        return findUniqeOutput;
+    }
+    
+    resource function post filter(types:IssueFilterRequest filterRequest) returns types:Issue[]|http:InternalServerError|error {
+      types:Issue[] validIssues = [];
+      if filterRequest.tags.length() != 0 {
+         string[] validIssuesIds = [];
+         foreach string tagName in filterRequest.tags {
+            types:Tag|error tagData = tagDB.findOne({"tag_name":tagName });
+            if !(tagData is error) {
+               string[] issuesIds = utils:stringToListConverter(tagData.issue_ids);
+               foreach string issueId in issuesIds {
+                  if validIssuesIds.indexOf(issueId) is () {
+                     validIssuesIds.push(issueId);
+                  }
+               }
+            }
+         }
+
+         foreach string validId in validIssuesIds {
+            map<json?> filter =  {"id":validId , "issue_type": types:ISSUE};
+            if !(filterRequest.status is null){
+               filter["status"] = filterRequest.status;
+            }
+            if !(filterRequest.created_by is null){
+               filter["created_by"] = filterRequest.created_by;
+            }
+
+            types:Issue|error issue = issueDB.findOne(filter);
+            if!(issue is error) {
+               validIssues.push(issue);
+            }
+         }
+
+      } else {
+          map<json?> filter =  {"issue_type": types:ISSUE};
+            if !(filterRequest.status is null){
+               filter["status"] = filterRequest.status;
+            }
+
+            if !(filterRequest.created_by is null){
+               filter["created_by"] = filterRequest.created_by;
+            }
+
+         validIssues =check issueDB.get(filter);
+      }
+
+      types:Issue[] filteredIssues = self.similarityfinder.getSimilarityOrder(filterRequest.description,validIssues);
+      return filteredIssues;
+    }
+
+    resource function put update(types:IssueUpdateRequest issueUpdateRequest) returns types:Issue|http:InternalServerError|http:NotFound|error {
+      if issueUpdateRequest.watched is null {
+         string[]|null newTags = issueUpdateRequest.tags;
+         types:IssueContentUpdate issueUpdateRecord = {title: issueUpdateRequest.title, description: issueUpdateRequest.description, status: issueUpdateRequest.status };
+         if !(newTags is null) {
+            if newTags.length() != 0 {
+               types:Issue|error existingIssue = issueDB.findOne({"id":issueUpdateRequest.id});
+               if!(existingIssue is error) {
+                  if (existingIssue.tags != "") {
+                  string[] tagNames = utils:stringToListConverter(existingIssue.tags);
+                  foreach string tagName in tagNames {
+                     types:Tag|error tagRecord = tagDB.findOne({"tag_name":tagName});
+                     if !(tagRecord is error) {
+                        string[] issueIds = utils:stringToListConverter(tagRecord.issue_ids);
+                        if !(issueIds.indexOf(issueUpdateRequest.id) is ()) {
+                           int index = <int>issueIds.indexOf(issueUpdateRequest.id);
+                           _ = issueIds.remove(index);
+                           _ = check tagDB.updateOne({issue_ids: utils:listToStringConverter(issueIds)},{"tag_name": tagName});
+                        }
+                     }
+                  }
+
+               }
+            }
+
+               foreach string tag in newTags {
+                  types:Tag|error tagRecord = tagDB.findOne({"tag_name": tag});
+                  if tagRecord is types:Tag {
+                     _ = check tagDB.updateOne({issue_ids: tagRecord.issue_ids + "|" + issueUpdateRequest.id}, {"tag_name": tag});
+                  } else {
+                     _ = check tagDB.insertOne({tag_name: tag , issue_ids: issueUpdateRequest.id});
+                  }
+               }
+               
+               issueUpdateRecord.tags = utils:listToStringConverter(newTags);
+
+            }
+         }
+          types:Issue updatedIssue= check issueDB.updateOne(issueUpdateRecord, {"id":issueUpdateRequest.id});
+          return updatedIssue;
+      } else {
+         types:Issue|error existingIssue = issueDB.findOne({"id":issueUpdateRequest.id});
+         if!(existingIssue is error) {
+            int views = existingIssue.views + 1;
+            types:Issue updatedIssue= check issueDB.updateOne({"views": views}, {"id":issueUpdateRequest.id});
+            return updatedIssue;
+         } else {
+            return http:NOT_FOUND;
+         }
+      }
+     
+    }
+
+    resource function delete issues/[string id]() returns http:DELETE|http:InternalServerError|error {
+
+      types:Issue|error existingIssue = issueDB.findOne({"id":id});
+      if !(existingIssue is error){
+         if(existingIssue.tags != "") {
+            string[] tagNames = utils:stringToListConverter(existingIssue.tags);
+            foreach string tagName in tagNames {
+               types:Tag|error tagRecord = tagDB.findOne({"tag_name":tagName});
+               if !(tagRecord is error){
+                  string[] issueIds = utils:stringToListConverter(tagRecord.issue_ids);
+                  if !(issueIds.indexOf(id) is ()) {
+                     int index = <int>issueIds.indexOf(id);
+                     _ = issueIds.remove(index);
+                     _ = check tagDB.updateOne({issue_ids: utils:listToStringConverter(issueIds)}, {"tag_name": tagName});
+                  }
+               }
+            }
+         }  
+      }
+
+      boolean deletion = check issueDB.deleteOne({"id": id});
+      if deletion {
+         return http:HTTP_DELETE;
+      } else {
+         return http:INTERNAL_SERVER_ERROR;
+      }
+    }
 }

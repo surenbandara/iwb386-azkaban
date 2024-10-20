@@ -13,7 +13,6 @@ type SimilarityRecord record {|
     string sentence;
 |};
 
-
 public class SimilarityFinder {
 
     private function tokenizer(string sentence, map<int> tokenFrequency) returns DocumentVector {
@@ -66,7 +65,7 @@ public class SimilarityFinder {
          DocumentVector[] documentVectors = [];
          int documentsCount = issues.length() + 1;
          foreach types:Issue issue in issues {
-            documentVectors.push(self.tokenizer(issue.title+" "+issue.description, tokenFrequency));
+            documentVectors.push(self.tokenizer(issue.title?:""+" "+issue.description, tokenFrequency));
          }
         
         DocumentVector sentenceDocumentVector = self.tokenizer(sentence, tokenFrequency);

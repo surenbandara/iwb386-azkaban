@@ -4,6 +4,7 @@
 CONTAINER_NAME="mongodb-container"
 MONGO_IMAGE="mongo:latest"
 DB_NAME="main"
+INDEX_FIELD="tag_name"
 
 # Check if the container is already running
 if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
@@ -20,6 +21,10 @@ sleep 10
 
 # Create the database
 echo "Creating database '$DB_NAME'..."
-sudo docker exec -it $CONTAINER_NAME mongosh --eval "use $DB_NAME; db.createCollection('init');"
+sudo docker exec -it $CONTAINER_NAME mongosh --eval "use $DB_NAME; db.createCollection('tag');"
+sudo docker exec -it $CONTAINER_NAME mongosh --eval "use $DB_NAME; db.$COLLECTION_NAME.createIndex({ '$INDEX_FIELD': 1 });"
+
+sudo docker exec -it $CONTAINER_NAME mongosh --eval "use $DB_NAME; db.createCollection('issue');"
+
 
 echo "Database '$DB_NAME' created successfully."
